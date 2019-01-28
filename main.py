@@ -196,6 +196,14 @@ def validData(df, sheet_name):
     if len(df.columns) != 19:
         errores.append('Problemas en nro de columnas en ' + sheet_name)
         return(df, errores)  
+        
+    null_columns = list(df.columns[df.isnull().any()])
+    
+    
+    if len(null_columns) > 0:
+        myList = ','.join(map(str, null_columns))
+        errores.append('Las columnas: ' + myList + ' en: ' + sheet_name + ' tienen valores vacíos')
+       
     
     
     df.columns = ['no', 'tipo', 'nombre', 'cedula', 'sexo', 'edad', 'ts1', 'ts2',
@@ -321,14 +329,16 @@ def get_compPers(v, sheet_names, personas, ts2Dict):
        
         
         std_toComp = sorted(toComp, key=op.attrgetter('nombre'))
-        gt1 = list(filter(lambda x: x.ts2 >= val and x.cu != 'comp', pivot))
-        lt1 = list(filter(lambda x: x.ts2 < val or x.cu == 'comp', pivot))
+        gt1 = list(filter(lambda x: x.ts2 > val and x.cu != 'comp', pivot))
+        lt1 = list(filter(lambda x: x.ts2 <= val or x.cu == 'comp', pivot))
         
         for obj in gt1:
             pos = obj.comparador(std_toComp)
             if pos >= 0:
                 if std_toComp[pos].cod_emp != obj.cod_emp:
                     obj.errores = obj.errores + 'Traspaso: De empresa ' + str(obj.cod_emp) + ' a empresa ' + str(std_toComp[pos].cod_emp)
+                if similar(std_toComp[pos].nombre, obj.nombre) < 0.78:
+                    obj.errores = obj.errores + 'Revisar: El nombre presenta mucha diferencia, revisar si corresponde'
                     
                 std_toComp[pos].cu = obj.cu
             else:           
@@ -464,8 +474,7 @@ class Application(ttk.Frame):
         
         self.logo = tk.PhotoImage(file='logo.gif') 
         self.label4 = tk.Label(self, image = self.logo)
-        self.label4.place(x=190,y=5)          
-        
+        self.label4.place(x=190,y=5)     
         
         
         self.dataload_button = ttk.Button(

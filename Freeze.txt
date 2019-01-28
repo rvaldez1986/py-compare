@@ -1,6 +1,6 @@
 crear setup.py viendo que incluya los archivos que requiera y el ejecutable con su nombre
 Open CMD Prompt
-Use cd to reach folder of program (ID_PROG5)
+Use cd to reach folder of program (ID_PROG6)
 python3 setup.py build
 comprimir carpeta exe.win
 organizar para usar la menor memoria, utilizar otros build
