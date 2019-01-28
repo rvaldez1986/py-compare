@@ -22,6 +22,12 @@ import csv
 
 def similar(a, b):
     return SequenceMatcher(None, a, b).ratio()
+    
+def pwCount(a, b):
+    als = a.split()
+    bls = b.split()
+    pct = len([x for x in als if x in bls])/max(len(als),1)
+    return(pct)
 
 
 class Persona:
@@ -71,17 +77,22 @@ class Persona:
         
     
     def dst_search(self, y):
-        filter0 = list(filter(lambda x: x.cedula == '' , y))  #Buscamos en los que no tienen cedula, sino ya estaria encontrado
-        filter1 = list(filter(lambda x: x.edad == self.edad - 1 , filter0))
-        filterFinal = list(filter(lambda x: x.ts2 <= self.ts2 - 0.974 and x.ts2 >= self.ts2 - 1.05 , filter1)) 
+        pos = -1
+        if self.cedula != '':
+            filter0 = list(filter(lambda x: x.cedula == '' , y))
+            filter1 = list(filter(lambda x: x.edad == self.edad - 1 , filter0))
+        else:            
+            filter1 = list(filter(lambda x: x.edad == self.edad - 1 , y))        
+        
+        filterFinal = list(filter(lambda x: x.sexo == self.sexo  , filter1)) 
         
         list1 = [similar(self.nombre, o.nombre) for o in filterFinal]
         if len(list1)>0 and max(list1) >= 0.78:
             pos1 = list1.index(max(list1))
             name1 = filterFinal[pos1].nombre
-            pos = [ x.nombre for x in y ].index(name1)    
-        else:
-            pos = -1
+            pnames = pwCount(self.nombre, name1)
+            if pnames >= 0.75:
+                pos = [ x.nombre for x in y ].index(name1)     
             
         return(pos)
         
@@ -365,6 +376,10 @@ def get_compPers(v, sheet_names, personas, ts2Dict):
                 
                 if obj.ts2 <= val:
                     obj.errores = obj.errores + 'Revisar: Según ts2 no debería aparecer' + ', '
+                
+                ts2dif = obj.ts2 - std_toComp[pos].ts2
+                if ts2dif < 0.974 or ts2dif > 1.05:
+                    obj.errores = obj.errores + 'Revisar: El valor de ts2 puede tener un error' + ', '                    
                     
                 std_toComp[pos].cu = obj.cu
             else:  
