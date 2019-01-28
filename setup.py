@@ -7,7 +7,7 @@ version = "1"
 main_script = "main.py"
 optimization = 0
 packages = ["tkinter","numpy","pandas","openpyxl"]
-resources = ['Existing_File.xlsx','logo.gif']
+resources = ['TEMPLATE.xlsm','logo.gif']
 
 ex_packages = ["scipy", "PyQt4.QtSql", "sqlite3", 
                        "scipy.lib.lapack.flapack", "PyQt4.QtNetwork", "PyQt4.QtScript", "PyQt5", "matplotlib", 

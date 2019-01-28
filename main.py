@@ -16,9 +16,10 @@ import re
 import unicodedata
 import os
 import sys
+from difflib import SequenceMatcher
 
-
-
+def similar(a, b):
+    return SequenceMatcher(None, a, b).ratio()
 
 
 class Persona:
@@ -37,26 +38,45 @@ class Persona:
         self.cu = str(cu)  #Codigo único
         self.pos = pos
         
-    def b_search(self, x):
+    def b_search(self, x, attr):
         pos = -1
         b = 0
         e = len(x) - 1
         m = int((b+e)/2)    
         while b <= e and pos == -1:            
-            if x[m].nombre == self.nombre:
+            if getattr(x[m], attr) == getattr(self, attr):
                 pos = m 
             else:
-                if x[m].nombre > self.nombre:
+                if getattr(x[m], attr) > getattr(self, attr):
                     e = m - 1
                 else:
                     b = m + 1
             m = int((b+e)/2) 
         return(pos)
+    
+    def dst_search(self, y):
+        filter1 = list(filter(lambda x: x.edad == self.edad - 1 , y))
+        list1 = [similar(self.nombre,o.nombre) for o in filter1]
+        if len(list1)>0 and max(list1) >= 0.78:
+            pos1 = list1.index(max(list1))
+            name1 = filter1[pos1].nombre
+            pos = [ x.nombre for x in y ].index(name1)    
+        else:
+            pos = -1
+            
+        return(pos)
+        
         
         
     def comparador(self, lst_persona):
-        pos = self.b_search(lst_persona)
+        pos = self.b_search(lst_persona, 'nombre')
         #Aca se puede trabajar en otros métodos de búsqueda
+        if pos == -1 and self.cedula != '':
+            pos = self.b_search(lst_persona, 'cedula')          
+            
+        if pos == -1:
+            pos = self.dst_search(lst_persona)   
+        
         return(pos)
         
         
@@ -65,7 +85,7 @@ def load_file(fileName):
     
     return(workbook)
     
-def std_text(text, sheet_name, errores):
+def std_text(text, sheet_name, nro, errores):
     """
     Strip accents from input String.
 
@@ -78,7 +98,7 @@ def std_text(text, sheet_name, errores):
    
     try:         
         if (not text) or (text == None) or pd.isnull(text):
-            errores.append('Problemas de nombres vacios en ' + sheet_name)
+            errores.append('Problemas de nombres vacios en ' + sheet_name + ', posición nro: ' + str(nro))
             return        
         
         text = text.upper().strip(' ,.-$')
@@ -96,7 +116,7 @@ def std_text(text, sheet_name, errores):
         text = re.sub('[^A-Z0-9 ]+', '', text)
         return text
     except (ValueError, AttributeError):        
-        errores.append('Problemas en caracteres de nombres en ' + sheet_name)
+        errores.append('Problemas en caracteres de nombres en ' + sheet_name + ', posición nro: ' + str(nro))
         return
 
 def findDup(df, sheet_name, errores):    
@@ -136,25 +156,31 @@ def ced_val(x):
     else:
         return('')    
         
-def val_nbr(num, sheet_name, errores):    
+def val_nbr(num, texto, sheet_name, nro, errores):    
     try:    
         num = float(num)        
-        return num
-    except (ValueError, AttributeError):        
-        errores.append('Problemas en ts2 y/o edad en ' + sheet_name)
+        
+        if pd.isnull(num):
+            errores.append(texto + sheet_name + ', posición nro: ' + str(nro))
+            return        
+        
+        return(num)   
+        
+    except:        
+        errores.append(texto + sheet_name + ', posición nro: ' + str(nro))
         return
     
-def val_sx(txt, sheet_name, errores):    
+def val_sx(txt, sheet_name, nro, errores):    
     try:  
         txt = str(txt)
         txt = txt.strip(' ,.-$')
         if txt == 'F' or txt == 'M':     
             return txt
         else:
-            errores.append('Problemas en sexo en ' + sheet_name)
+            errores.append('Problemas en sexo en ' + sheet_name + ', posición nro: ' + str(nro))
             return
     except (ValueError, AttributeError):        
-        errores.append('Problemas en sexo en ' + sheet_name)
+        errores.append('Problemas en sexo en ' + sheet_name + ', posición nro: ' + str(nro))
         return    
     
 
@@ -173,17 +199,20 @@ def validData(df, sheet_name):
                       'tf', 'tw', 'reserva_jub', 'costo_laboral_jub',
                       'interes_neto_jub', 'gasto_jub', 'reserva_des', 'costo_laboral_des', 'interes_neto_des',
                      'gasto_des', 'codigo_empresa']
+                     
+    df['no'] = list(range(1,(df.shape[0]+1)))   
 
-    df['nombre'] = [std_text(name, sheet_name, errores) for name in df['nombre']]
+    df['nombre'] = [std_text(name, sheet_name, nro, errores) for name,nro in zip(df['nombre'], df['no'])]
 
     findDup(df, sheet_name, errores)
 
     df['cedula'] = [ced_val(ced) for ced in df['cedula']]
     
-    df['ts2'] = [val_nbr(num, sheet_name, errores) for num in df['ts2']]
-    df['edad'] = [val_nbr(num, sheet_name, errores) for num in df['edad']]
+        
+    df['ts2'] = [val_nbr(num, 'Problemas en ts2 en ', sheet_name, nro, errores) for num,nro in zip(df['ts2'], df['no'])]
+    df['edad'] = [val_nbr(num, 'Problemas en edad en ', sheet_name, nro, errores) for num,nro in zip(df['edad'],df['no'])]
 
-    df['sexo'] = [val_sx(txt, sheet_name, errores) for txt in df['sexo']]
+    df['sexo'] = [val_sx(txt, sheet_name, nro, errores) for txt,nro in zip(df['sexo'],df['no'])]
 
     errores1 = list(set(errores))
     
@@ -213,6 +242,10 @@ def validParam(workbook, sheet_names):
             for name in sheet_names:
                 ts2Dict[name] = float(ts2Dict[name])
                 
+                if pd.isnull(ts2Dict[name]):
+                   errores.append('Caracteres vacíos para ts2 min en parámetros')
+                   ts2Dict = {}
+                   return(ts2Dict, errores)                 
            
         except ValueError:
            errores.append('Caracteres no numéricos para ts2 min en parámetros')
@@ -270,7 +303,7 @@ def get_compPers(v, sheet_names, personas, ts2Dict):
             if pos >= 0:
                 std_toComp[pos].cu = obj.cu
             else:           
-                obj.errores = 'No aparece en ' + sheet_names[i+1]
+                obj.errores = 'Error: Debería aparecer en ' + sheet_names[i+1]
         
         pivot00 = sorted(gt1 + lt1, key=op.attrgetter('pos'))
         toComp11 = sorted(std_toComp, key=op.attrgetter('pos'))  
@@ -311,9 +344,9 @@ def get_pdBase(v, sheet_names, workbook, pers_comp):
 def write_File(v, result, fileName):    
     #prepare database for presentation and write it to excel (or csv) file
     #result.to_csv("Result.csv")             
-    book = load_workbook('Existing_File.xlsx')    
+    book = load_workbook(filename='TEMPLATE.xlsm', read_only=False, keep_vba=True)
     v.value += 1         
-    writer = pd.ExcelWriter(fileName[0:-5]+"_RESULT.xlsx", engine='openpyxl')     
+    writer = pd.ExcelWriter(fileName[0:-5]+"_RESULT.xlsm", engine='openpyxl')     
     v.value += 1     
     writer.book = book    
     v.value += 1     
@@ -467,7 +500,18 @@ class Application(ttk.Frame):
             
             if 'Parametros' in self.sheet_names:                
                 self.sheet_names.remove('Parametros')
-                self.sheet_names.sort(key = int, reverse = True)   
+                
+                try:                
+                    self.sheet_names.sort(key = float, reverse = True) 
+                    
+                except:
+                    answer = messagebox.askokcancel("Procesador Imp. Diferidos", "La data cargada tiene problemas en el nombre de las hojas")
+                    self.text1.set('[.]')
+                    self.run_button.config(state=NORMAL)
+                    self.dataload_button.config(state=NORMAL)
+                    self.parent.update_idletasks()
+                    return
+                    
                 
                 self.text1.set('Validando Archivo.....') 
                 self.parent.update_idletasks()
