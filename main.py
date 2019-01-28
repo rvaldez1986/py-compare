@@ -72,11 +72,20 @@ class Persona:
         
         
     def comparador(self, lst_persona):
+        #Buscar por nombre
         pos = self.b_search(lst_persona, 'nombre')
-        #Aca se puede trabajar en otros métodos de búsqueda
+       
+       #Si no se le encuentra buscar por cedula        
         if pos == -1 and self.cedula != '':
-            pos = self.b_search(lst_persona, 'cedula')          
-            
+            filt1 = list(filter(lambda x: x.cedula != '' , lst_persona))
+            if len(filt1)>0:
+                lst_cedula = sorted(filt1, key=op.attrgetter('cedula'))
+                post = self.b_search(lst_cedula, 'cedula')
+                if post >= 0:
+                    namet = lst_cedula[post].nombre
+                    pos = [ x.nombre for x in lst_persona ].index(namet)
+                    
+         #Si no se le encuentra buscar de otra manera            
         if pos == -1:
             pos = self.dst_search(lst_persona)   
         
@@ -332,11 +341,13 @@ def get_compPers(v, sheet_names, personas, ts2Dict):
         gt1 = list(filter(lambda x: x.ts2 > val and x.cu != 'comp', pivot))
         lt1 = list(filter(lambda x: x.ts2 <= val or x.cu == 'comp', pivot))
         
+        
         for obj in gt1:
             pos = obj.comparador(std_toComp)
             if pos >= 0:
                 if std_toComp[pos].cod_emp != obj.cod_emp:
                     obj.errores = obj.errores + 'Traspaso: De empresa ' + str(obj.cod_emp) + ' a empresa ' + str(std_toComp[pos].cod_emp)
+                    
                 if similar(std_toComp[pos].nombre, obj.nombre) < 0.78:
                     obj.errores = obj.errores + 'Revisar: El nombre presenta mucha diferencia, revisar si corresponde'
                     
@@ -474,7 +485,8 @@ class Application(ttk.Frame):
         
         self.logo = tk.PhotoImage(file='logo.gif') 
         self.label4 = tk.Label(self, image = self.logo)
-        self.label4.place(x=190,y=5)     
+        self.label4.place(x=190,y=5)          
+        
         
         
         self.dataload_button = ttk.Button(
@@ -631,10 +643,11 @@ class Application(ttk.Frame):
         
         if (self.p1.is_alive()):
             try:
+                mydict = {0:'Iniciando...', 1:'Cargando Clase Personas', 2:'Comparando Bases', 3:'Generando Bases Resultantes', 4:'Escribiendo Resultados'}
                 self.progressbar["value"] = self.num.value
                 perc = '{:.2f}'.format(round(self.num.value/self.totalIter,4)*100)
                 self.text2.set("%s%%" % perc) 
-                self.text3.set('paso {} de 4'.format(min(int(self.num2.value),4)))
+                self.text3.set('paso {} de 4: '.format(min(int(self.num2.value),4)) + mydict[min(int(self.num2.value),4)])
                 self.after(DELAY1, self.onGetValue1)
                 
                 return
