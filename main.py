@@ -17,6 +17,8 @@ import unicodedata
 import os
 import sys
 from difflib import SequenceMatcher
+import csv
+
 
 def similar(a, b):
     return SequenceMatcher(None, a, b).ratio()
@@ -115,7 +117,7 @@ def std_text(text, sheet_name, nro, errores):
         
         text = re.sub('[^A-Z0-9 ]+', '', text)
         return text
-    except (ValueError, AttributeError):        
+    except :        
         errores.append('Problemas en caracteres de nombres en ' + sheet_name + ', posición nro: ' + str(nro))
         return
 
@@ -134,7 +136,7 @@ def ced_val(x):
         return('')        
     try:
         z = np.array([int(i) for i in y])     
-    except ValueError:
+    except:
         return('')
     
     p = z[:-1][1::2]
@@ -179,7 +181,7 @@ def val_sx(txt, sheet_name, nro, errores):
         else:
             errores.append('Problemas en sexo en ' + sheet_name + ', posición nro: ' + str(nro))
             return
-    except (ValueError, AttributeError):        
+    except :        
         errores.append('Problemas en sexo en ' + sheet_name + ', posición nro: ' + str(nro))
         return    
     
@@ -225,21 +227,25 @@ def validParam(workbook, sheet_names):
         df.columns = ['Año', 'ts2_min']
         df['Año'] = [str(value) for value in df['Año']]
         try:
-           df['ts2_min'] = [float(value) for value in df['ts2_min']] 
-        except ValueError:
+           df['ts2_min'] = [float(value) for value in df['ts2_min']]
+           
+        except:
            errores.append('Caracteres no numéricos para ts2 min en parámetros')
            ts2Dict = {}
            return(ts2Dict, errores)
         
         ts2Dict = df.set_index('Año').T.to_dict('records')[0]
         
-        if not set(ts2Dict.keys()) == set(sheet_names):            
+        un_st = list(set([str(int(float(num))) for num in sheet_names]))
+        un_st.sort(key=int, reverse = True)
+        
+        if not set(ts2Dict.keys()) == set(un_st):            
             errores.append('años en parámetros están incompletos')
             ts2Dict = {}
             return(ts2Dict, errores)
         
-        try:
-            for name in sheet_names:
+        try:            
+            for name in un_st:
                 ts2Dict[name] = float(ts2Dict[name])
                 
                 if pd.isnull(ts2Dict[name]):
@@ -247,14 +253,14 @@ def validParam(workbook, sheet_names):
                    ts2Dict = {}
                    return(ts2Dict, errores)                 
            
-        except ValueError:
-           errores.append('Caracteres no numéricos para ts2 min en parámetros')
+        except:
+           errores.append('Error en procesamiento de hoja parámetros')
            ts2Dict = {}
            return(ts2Dict, errores)
            
         return(ts2Dict, errores)    
     
-    except ValueError:
+    except:
         errores.append('Error en parámetros')
         ts2Dict = {}
         return(ts2Dict, errores)    
@@ -290,9 +296,16 @@ def get_compPers(v, sheet_names, personas, ts2Dict):
     pers_comp.append(personas[0])
     
     for i in range(len(sheet_names)-1):
-        pivot = pers_comp[i]
+        
+        pos_piv = i      
+        
+        while int(float(sheet_names[pos_piv]) ) == int(float(sheet_names[i+1])):
+            pos_piv -= 1
+        
+        pivot = pers_comp[pos_piv]
         toComp = personas[i+1]
-        val = ts2Dict[sheet_names[i]]
+        val = ts2Dict[str(int(float(sheet_names[pos_piv])))]
+       
         
         std_toComp = sorted(toComp, key=op.attrgetter('nombre'))
         gt1 = list(filter(lambda x: x.ts2 >= val and x.cu != 'comp', pivot))
@@ -303,12 +316,12 @@ def get_compPers(v, sheet_names, personas, ts2Dict):
             if pos >= 0:
                 std_toComp[pos].cu = obj.cu
             else:           
-                obj.errores = 'Error: Debería aparecer en ' + sheet_names[i+1]
+                obj.errores = obj.errores + 'Error: Debería aparecer en ' + sheet_names[i+1] + ', '
         
         pivot00 = sorted(gt1 + lt1, key=op.attrgetter('pos'))
         toComp11 = sorted(std_toComp, key=op.attrgetter('pos'))  
         
-        pers_comp[i] = pivot00
+        pers_comp[pos_piv] = pivot00
         pers_comp.append(toComp11)
         
         v.value += 1
@@ -530,6 +543,12 @@ class Application(ttk.Frame):
                 
                 if len(self.datErr) > 0:
                    answer = messagebox.askokcancel("Procesador Imp. Diferidos", self.datErr)
+                   with open(self.fileName[0:-5]+"_ERRORES.csv",'w') as resultFile:
+                       wr = csv.writer(resultFile, dialect='excel')
+                       for row in self.datErr:
+                           wr.writerow([row])                   
+                   
+                   
                    self.text1.set('[.]')
                    self.run_button.config(state=NORMAL)
                    self.dataload_button.config(state=NORMAL)
@@ -578,8 +597,7 @@ class Application(ttk.Frame):
                     self.parent.destroy()   
         
         else:
-            answer = messagebox.askokcancel("Procesador Imp. Diferidos", "No existe data correctamente cargada en el programa")
-       
+            answer = messagebox.askokcancel("Procesador Imp. Diferidos", "No existe data correctamente cargada en el programa")       
         
         
         
@@ -587,10 +605,11 @@ class Application(ttk.Frame):
         
         if (self.p1.is_alive()):
             try:
+                myDict = {1:'Leyendo Personas', 2:'Comparando Personas', 3:'Generando Base Final', 4:'Escribiendo en Template'}
                 self.progressbar["value"] = self.num.value
                 perc = '{:.2f}'.format(round(self.num.value/self.totalIter,4)*100)
                 self.text2.set("%s%%" % perc) 
-                self.text3.set('paso {} de 4'.format(min(int(self.num2.value),4)))
+                self.text3.set('paso {} de 4: '.format(min(int(self.num2.value),4)) + myDict[min(int(self.num2.value),4)])
                 self.after(DELAY1, self.onGetValue1)
                 
                 return
