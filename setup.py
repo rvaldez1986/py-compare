@@ -19,9 +19,11 @@ ex_packages = ["scipy", "PyQt4.QtSql", "sqlite3",
                            ]
 
 
+
+
 base = None
 if sys.platform == "win32":
-    #base = "Win32GUI"
+    base = "Win32GUI"  #if you want back console, comment line
     executables = [Executable("main.py", base=base, targetName=exe_name+".exe")]
     
     
