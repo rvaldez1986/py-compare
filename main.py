@@ -30,7 +30,7 @@ class Persona:
     errores = ''    
 
     # Initializer / Instance Attributes
-    def __init__(self, nombre, cedula, sexo, edad, ts1, ts2, cu, pos):
+    def __init__(self, nombre, cedula, sexo, edad, ts1, ts2, cod_emp, cu, pos):
         self.nombre = str(nombre)
         self.cedula = str(cedula)
         self.sexo = sexo
@@ -39,6 +39,7 @@ class Persona:
         self.ts2 = ts2
         self.cu = str(cu)  #Codigo único
         self.pos = pos
+        self.cod_emp = int(cod_emp)
         
     def b_search(self, x, attr):
         pos = -1
@@ -215,6 +216,8 @@ def validData(df, sheet_name):
     df['edad'] = [val_nbr(num, 'Problemas en edad en ', sheet_name, nro, errores) for num,nro in zip(df['edad'],df['no'])]
 
     df['sexo'] = [val_sx(txt, sheet_name, nro, errores) for txt,nro in zip(df['sexo'],df['no'])]
+    
+    df['codigo_empresa'] = [val_nbr(num, 'Problemas en código empresa en ', sheet_name, nro, errores) for num,nro in zip(df['codigo_empresa'],df['no'])]
 
     errores1 = list(set(errores))
     
@@ -238,6 +241,16 @@ def validParam(workbook, sheet_names):
         
         un_st = list(set([str(int(float(num))) for num in sheet_names]))
         un_st.sort(key=int, reverse = True)
+        
+        
+        dif = [float(numA) - float(numB) for numA,numB in zip(un_st[:-1],un_st[1:])]
+       
+        
+        if max(dif) != 1 or min(dif) != 1:
+            errores.append('Existen años faltantes dentro de pestañas (Hay saltos entre años diferentes que 1)')
+            ts2Dict = {}
+            return(ts2Dict, errores)
+            
         
         if not set(ts2Dict.keys()) == set(un_st):            
             errores.append('años en parámetros están incompletos')
@@ -278,9 +291,9 @@ def get_classPers(v, sheet_names, workbook):
         i = 1  
         for index, row in df.iterrows():
             if names == sheet_names[0]:             
-                pers_anio.append(Persona(row[2], row[3], row[4], row[5], row[6], row[7], i, i-1))            
+                pers_anio.append(Persona(row[2], row[3], row[4], row[5], row[6], row[7], row[18], i, i-1))            
             else:
-                pers_anio.append(Persona(row[2], row[3], row[4], row[5], row[6], row[7], 'comp', i-1))        
+                pers_anio.append(Persona(row[2], row[3], row[4], row[5], row[6], row[7], row[18], 'comp', i-1))        
             i+=1        
         personas.append(pers_anio)
         
@@ -314,6 +327,9 @@ def get_compPers(v, sheet_names, personas, ts2Dict):
         for obj in gt1:
             pos = obj.comparador(std_toComp)
             if pos >= 0:
+                if std_toComp[pos].cod_emp != obj.cod_emp:
+                    obj.errores = obj.errores + 'Traspaso: De empresa ' + str(obj.cod_emp) + ' a empresa ' + str(std_toComp[pos].cod_emp)
+                    
                 std_toComp[pos].cu = obj.cu
             else:           
                 obj.errores = obj.errores + 'Error: Debería aparecer en ' + sheet_names[i+1] + ', '
@@ -563,7 +579,7 @@ class Application(ttk.Frame):
                     self.dataload_button.config(state=NORMAL)
                     self.parent.update_idletasks() 
             else:
-                answer = messagebox.askokcancel("Procesador Imp. Diferidos", "La data cargada no contiene la pestaña parámertros")
+                answer = messagebox.askokcancel("Procesador Imp. Diferidos", "La data cargada no contiene la pestaña de nombre Parametros")
                 self.text1.set('[.]')
                 self.run_button.config(state=NORMAL)
                 self.dataload_button.config(state=NORMAL)
@@ -597,7 +613,8 @@ class Application(ttk.Frame):
                     self.parent.destroy()   
         
         else:
-            answer = messagebox.askokcancel("Procesador Imp. Diferidos", "No existe data correctamente cargada en el programa")       
+            answer = messagebox.askokcancel("Procesador Imp. Diferidos", "No existe data correctamente cargada en el programa")
+       
         
         
         
@@ -605,11 +622,10 @@ class Application(ttk.Frame):
         
         if (self.p1.is_alive()):
             try:
-                myDict = {1:'Leyendo Personas', 2:'Comparando Personas', 3:'Generando Base Final', 4:'Escribiendo en Template'}
                 self.progressbar["value"] = self.num.value
                 perc = '{:.2f}'.format(round(self.num.value/self.totalIter,4)*100)
                 self.text2.set("%s%%" % perc) 
-                self.text3.set('paso {} de 4: '.format(min(int(self.num2.value),4)) + myDict[min(int(self.num2.value),4)])
+                self.text3.set('paso {} de 4'.format(min(int(self.num2.value),4)))
                 self.after(DELAY1, self.onGetValue1)
                 
                 return
