@@ -56,13 +56,29 @@ class Persona:
                     b = m + 1
             m = int((b+e)/2) 
         return(pos)
+        
+    def ced_search(self, y):
+        pos = -1
+        filt1 = list(filter(lambda x: x.cedula != '' , y))
+        if len(filt1)>0:
+            lst_cedula = sorted(filt1, key=op.attrgetter('cedula'))
+            post = self.b_search(lst_cedula, 'cedula')
+            if post >= 0:
+                namet = lst_cedula[post].nombre
+                pos = [ x.nombre for x in y ].index(namet)                
+        return(pos)
+            
+        
     
     def dst_search(self, y):
-        filter1 = list(filter(lambda x: x.edad == self.edad - 1 , y))
-        list1 = [similar(self.nombre,o.nombre) for o in filter1]
+        filter0 = list(filter(lambda x: x.cedula == '' , y))  #Buscamos en los que no tienen cedula, sino ya estaria encontrado
+        filter1 = list(filter(lambda x: x.edad == self.edad - 1 , filter0))
+        filterFinal = list(filter(lambda x: x.ts2 <= self.ts2 - 0.974 and x.ts2 >= self.ts2 - 1.05 , filter1)) 
+        
+        list1 = [similar(self.nombre, o.nombre) for o in filterFinal]
         if len(list1)>0 and max(list1) >= 0.78:
             pos1 = list1.index(max(list1))
-            name1 = filter1[pos1].nombre
+            name1 = filterFinal[pos1].nombre
             pos = [ x.nombre for x in y ].index(name1)    
         else:
             pos = -1
@@ -77,13 +93,7 @@ class Persona:
        
        #Si no se le encuentra buscar por cedula        
         if pos == -1 and self.cedula != '':
-            filt1 = list(filter(lambda x: x.cedula != '' , lst_persona))
-            if len(filt1)>0:
-                lst_cedula = sorted(filt1, key=op.attrgetter('cedula'))
-                post = self.b_search(lst_cedula, 'cedula')
-                if post >= 0:
-                    namet = lst_cedula[post].nombre
-                    pos = [ x.nombre for x in lst_persona ].index(namet)
+            pos = self.ced_search(lst_persona)            
                     
          #Si no se le encuentra buscar de otra manera            
         if pos == -1:
@@ -338,22 +348,28 @@ def get_compPers(v, sheet_names, personas, ts2Dict):
        
         
         std_toComp = sorted(toComp, key=op.attrgetter('nombre'))
-        gt1 = list(filter(lambda x: x.ts2 > val and x.cu != 'comp', pivot))
-        lt1 = list(filter(lambda x: x.ts2 <= val or x.cu == 'comp', pivot))
+#        gt1 = list(filter(lambda x: x.ts2 > val and x.cu != 'comp', pivot))
+#        lt1 = list(filter(lambda x: x.ts2 <= val or x.cu == 'comp', pivot))
+        gt1 = list(filter(lambda x: x.cu != 'comp', pivot))
+        lt1 = list(filter(lambda x: x.cu == 'comp', pivot))
         
         
         for obj in gt1:
             pos = obj.comparador(std_toComp)
             if pos >= 0:
                 if std_toComp[pos].cod_emp != obj.cod_emp:
-                    obj.errores = obj.errores + 'Traspaso: De empresa ' + str(obj.cod_emp) + ' a empresa ' + str(std_toComp[pos].cod_emp)
+                    obj.errores = obj.errores + 'Traspaso: De empresa ' + str(obj.cod_emp) + ' a empresa ' + str(std_toComp[pos].cod_emp) + ', '
                     
                 if similar(std_toComp[pos].nombre, obj.nombre) < 0.78:
-                    obj.errores = obj.errores + 'Revisar: El nombre presenta mucha diferencia, revisar si corresponde'
+                    obj.errores = obj.errores + 'Revisar: El nombre presenta mucha diferencia, revisar si corresponde' + ', '
+                
+                if obj.ts2 <= val:
+                    obj.errores = obj.errores + 'Revisar: Según ts2 no debería aparecer' + ', '
                     
                 std_toComp[pos].cu = obj.cu
-            else:           
-                obj.errores = obj.errores + 'Error: Debería aparecer en ' + sheet_names[i+1] + ', '
+            else:  
+                if obj.ts2 > val:
+                    obj.errores = obj.errores + 'Error: Debería aparecer en ' + sheet_names[i+1] + ', '
         
         pivot00 = sorted(gt1 + lt1, key=op.attrgetter('pos'))
         toComp11 = sorted(std_toComp, key=op.attrgetter('pos'))  
