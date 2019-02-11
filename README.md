@@ -10,4 +10,4 @@ The application uses tkinter as the GUI, cx_freeze to create the application as 
 
 Finally it also uses an Excel template so it can be incorporated with prior and posterior analysis in this software.
 
-Although the algorithm uses a simple string distance algorithm for comparing among entries, the speed and friendliness are optimized.
+Although the program uses a simple string distance algorithm for comparing among entries, the speed and user friendliness are optimized.
