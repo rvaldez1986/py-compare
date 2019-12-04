@@ -19,3 +19,19 @@ The application uses tkinter as the GUI, cx_freeze to create the application as 
 Finally it also uses an Excel template so it can be incorporated with prior and posterior analysis in this software.
 
 Although the program uses a simple string distance algorithm for comparing among entries, the speed and user friendliness are optimized.
+
+This wrapper has the following functions:
+
+* send_text_message(recipient_id, message)
+* send_message(recipient_id, message)
+* send_generic_message(recipient_id, elements)
+* send_button_message(recipient_id, text, buttons)
+* send_attachment(recipient_id, attachment_type, attachment_path)
+* send_attachment_url(recipient_id, attachment_type, attachment_url)
+* send_image(recipient_id, image_path)
+* send_image_url(recipient_id, image_url)
+* send_audio(recipient_id, audio_path)
+* send_audio_url(recipient_id, audio_url)
+* send_video(recipient_id, video_path)
+
+
