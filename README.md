@@ -2,12 +2,10 @@
 Python Machine Learning database merger 
 
 
-
-
 ![image](https://user-images.githubusercontent.com/19597283/52545532-2b7d2480-2d86-11e9-9dfd-5a85d04e79a6.png)
  
  
- Python Wrapper for [Facebook Messenger Platform](https://developers.facebook.com/docs/messenger-platform).
+ Executable application using [cx_freeze](https://anthony-tuininga.github.io/cx_Freeze/).
  
 ### About
 
