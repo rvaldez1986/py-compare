@@ -1,6 +1,6 @@
 # py-compare
 
-Python Machine Learning _Database_Merger turned into stand-alone executable application using [cx_freeze](https://anthony-tuininga.github.io/cx_Freeze/) and [tkinter](https://docs.python.org/2/library/tkinter.html). 
+Python Machine Learning __Database Merger__ turned into stand-alone executable application using [cx_freeze](https://anthony-tuininga.github.io/cx_Freeze/) and [tkinter](https://docs.python.org/2/library/tkinter.html). 
 
 
 ![image](https://user-images.githubusercontent.com/19597283/52545532-2b7d2480-2d86-11e9-9dfd-5a85d04e79a6.png)
