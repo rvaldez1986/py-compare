@@ -5,23 +5,24 @@ Python Machine Learning database merger
 ![image](https://user-images.githubusercontent.com/19597283/52545532-2b7d2480-2d86-11e9-9dfd-5a85d04e79a6.png)
  
  
- Executable application using [cx_freeze](https://anthony-tuininga.github.io/cx_Freeze/).
+ Machine Learning script turned into stand-alone executable application using [cx_freeze](https://anthony-tuininga.github.io/cx_Freeze/) and [tkinter](https://docs.python.org/2/library/tkinter.html).
  
 ### About
 
-project using tkinter, cx_freeze and pandas. 
+An application that can be run from any computer in the organization without the need to install python. 
 
-The objective of the application is to create a stand-alone application that can be run from any computer in the organization. 
-The application uses tkinter as the GUI, cx_freeze to create the application as stand-alone, explores multi processing capabilities and object oriented programming. Multi processing is also used for the gui loading bar working in parallel with the computation. 
+For the 
+
+explores multi processing capabilities and object oriented programming. Multi processing is also used for the gui loading bar working in parallel with the computation. 
 
 Finally it also uses an Excel template so it can be incorporated with prior and posterior analysis in this software.
 
 Although the program uses a simple string distance algorithm for comparing among entries, the speed and user friendliness are optimized.
 
-This wrapper has the following functions:
+The application has the following features:
 
-* send_text_message(recipient_id, message)
-* send_message(recipient_id, message)
+* It can be run from any computer in the organization without the need to install python.
+* Using [multiprocessing](https://docs.python.org/2/library/multiprocessing.html), the application runs the gui and the calculations on different processors, allowing to trace the progress in real time using a progress bar
 * send_generic_message(recipient_id, elements)
 * send_button_message(recipient_id, text, buttons)
 * send_attachment(recipient_id, attachment_type, attachment_path)
